@@ -6,7 +6,7 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 // Adding Light
-var light = new THREE.AmbientLight(0xffffff, 0.2);
+var light = new THREE.AmbientLight(0xffffff, 0.0);
 scene.add(light);
 
 var dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
