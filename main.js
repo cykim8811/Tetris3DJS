@@ -11,3 +11,10 @@ var cube = new THREE.Mesh( geometry, material );
 scene.add( cube );
 
 camera.position.z = 5;
+
+function render() {
+    requestAnimationFrame( render );
+    renderer.render( scene, camera );
+}
+render();
+ 
