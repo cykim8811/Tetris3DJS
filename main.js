@@ -10,12 +10,10 @@ var light = new THREE.AmbientLight(0xffffff, 0.0);
 scene.add(light);
 
 var dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-dirLight.position.set(0, 10, -10);
-dirLight.target.position.set(0, -10, 10);
+dirLight.position.set(200, 200, 300);
 dirLight.castShadow = true;
 
 scene.add(dirLight);
-scene.add(dirLight.target);
 
 var geometry = new THREE.BoxGeometry(1, 1, 1);
 var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
