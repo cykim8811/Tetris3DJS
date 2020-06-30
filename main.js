@@ -23,13 +23,13 @@ var geometry = new THREE.BoxGeometry(1, 1, 1);
 var textureLoader = new THREE.TextureLoader();
 var texture_list = new Array(8);
 var material = new Array(8);
-for (var i=0; i<8; i++){
-    texture_list[i] = new textureLoader.load("image/block_" + String(i) +".png");
+for (var i = 0; i < 8; i++) {
+    texture_list[i] = new textureLoader.load("image/block_" + String(i) + ".png");
     material[i] = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         map: texture_list[i]
     });
-    
+
 }
 texture_white = new textureLoader.load("image/block_white.png");
 material_white = new THREE.MeshPhongMaterial({
@@ -38,18 +38,18 @@ material_white = new THREE.MeshPhongMaterial({
 });
 
 // 3D Array class
-function Array3D(sx, sy, sz){
+function Array3D(sx, sy, sz) {
     this.sx = sx;
     this.sy = sy;
     this.sz = sz;
     this.data = new Array(sx * sy * sz);
-    this.set = function(x, y, z, data) {
+    this.set = function (x, y, z, data) {
         this.data[x * sy * sz + y * sz + z] = data;
     }
-    this.get = function(x, y, z){
+    this.get = function (x, y, z) {
         return this.data[x * sy * sz + y * sz + z];
     }
-    this.copy = function(other) {
+    this.copy = function (other) {
         this.sx = other.sx;
         this.sy = other.sy;
         this.sz = other.sz;
@@ -58,6 +58,13 @@ function Array3D(sx, sy, sz){
             this.data[i] = other.data[i];
         }
     }
+}
+
+// 3D Integer vector
+function GridVector(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
 }
 
 
@@ -69,90 +76,82 @@ var block = new Array3D(map_side_length, map_height, map_side_length);
 var map = new Array3D(map_side_length, map_height + 4, map_side_length);
 
 // Block shape data
-var block_data = new Array(6);
+var block_data = new Array();
 var temp_data;
 
-{
-    {
-        temp_data = new Array3D(5, 5, 5);
-        temp_data.set(2, 3, 2, 1);
-        temp_data.set(2, 2, 2, 1);
-        temp_data.set(2, 1, 2, 1);
-        temp_data.set(2, 0, 2, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(3, 3, 3);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(2, 1, 1, 1);
-        temp_data.set(2, 1, 2, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(3, 3, 3);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(1, 2, 1, 1);
-        temp_data.set(2, 1, 2, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(2, 2, 2);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(1, 0, 1, 1);
-        temp_data.set(1, 0, 0, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(2, 2, 2);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(1, 0, 1, 1);
-        temp_data.set(1, 0, 2, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(2, 2, 2);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(1, 0, 1, 1);
-        temp_data.set(0, 0, 1, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(2, 2, 2);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(1, 0, 1, 1);
-        temp_data.set(1, 1, 0, 1);
-        block_data.push(temp_data);
-    }
-    {
-        temp_data = new Array3D(2, 2, 2);
-        temp_data.set(0, 1, 1, 1);
-        temp_data.set(1, 1, 1, 1);
-        temp_data.set(1, 0, 1, 1);
-        temp_data.set(2, 1, 1, 1);
-        block_data.push(temp_data);
-    }
+if (true) {
+    temp_data = new Array3D(5, 5, 5);
+    temp_data.set(2, 3, 2, 1);
+    temp_data.set(2, 2, 2, 1);
+    temp_data.set(2, 1, 2, 1);
+    temp_data.set(2, 0, 2, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(3, 3, 3);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(2, 1, 1, 1);
+    temp_data.set(2, 0, 1, 1);
+    block_data.push(temp_data);
+
+
+    temp_data = new Array3D(3, 3, 3);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(1, 2, 1, 1);
+    temp_data.set(2, 2, 2, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(0, 0, 1, 1);
+    temp_data.set(1, 0, 0, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(1, 0, 1, 1);
+    temp_data.set(1, 0, 2, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(1, 0, 1, 1);
+    temp_data.set(0, 0, 1, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(1, 0, 1, 1);
+    temp_data.set(1, 1, 0, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 1, 1, 1);
+    temp_data.set(1, 1, 1, 1);
+    temp_data.set(1, 0, 1, 1);
+    temp_data.set(2, 1, 1, 1);
+    block_data.push(temp_data);
 }
 
-function rotate(target, axis, n=1) {
+function rotate(target, axis, n = 1) {
     var result = new Array3D(target.sx, target.sy, target.sz);
-    var rotftn = function(){};
-    if (axis == 'X'){
-        rotftn = function(x, y, z){
+    var rotftn = function () { };
+    if (axis == 'X') {
+        rotftn = function (x, y, z) {
             result.set(x, z, target.sy - 1 - y, target.get(x, y, z));
         }
-    }else if (axis == 'Y'){
-        rotftn = function(x, y, z){
+    } else if (axis == 'Y') {
+        rotftn = function (x, y, z) {
             result.set(target.sz - 1 - z, y, x, target.get(x, y, z));
         }
-    }else if (axis == 'Z'){
-        rotftn = function(x, y, z){
-            result.set(y, target.sx-1-x, z, target.get(x, y, z));
+    } else if (axis == 'Z') {
+        rotftn = function (x, y, z) {
+            result.set(y, target.sx - 1 - x, z, target.get(x, y, z));
         }
     }
     for (var ix = 0; ix < target.sx; ix++) {
@@ -164,27 +163,27 @@ function rotate(target, axis, n=1) {
     }
 }
 
-// Set block at position x, y, z with data
+// Display block at position x, y, z with data
 function display(x, y, z, data) {
-    if (data < 0){
+    if (data < 0) {
         block.get(x, y, z).visible = false;
         map.set(x, y, z, -1);
-    }else{
+    } else {
         block.get(x, y, z).material = material[data % 8];
         block.get(x, y, z).visible = true;
     }
 }
 
 // Initiating map
-for (var ix=0; ix<map_side_length ; ix++) {
-    for (var iy=0; iy<map_height ; iy++) {
-        for (var iz=0; iz<map_side_length ; iz++) {
+for (var ix = 0; ix < map_side_length; ix++) {
+    for (var iy = 0; iy < map_height; iy++) {
+        for (var iz = 0; iz < map_side_length; iz++) {
             var index = (ix * map_side_length * map_height) + (iy * map_side_length) + iz;
             var cbl = new THREE.Mesh(geometry);
             var amp = 1;
-            var px = (ix-(map_side_length-1)/2) * amp,
+            var px = (ix - (map_side_length - 1) / 2) * amp,
                 py = iy * amp,
-                pz = (iz-(map_side_length-1)/2) * amp;
+                pz = (iz - (map_side_length - 1) / 2) * amp;
             cbl.position.set(px, py, pz);
             scene.add(cbl);
             block.set(ix, iy, iz, cbl);
@@ -192,32 +191,61 @@ for (var ix=0; ix<map_side_length ; ix++) {
         }
     }
 }
-for (var ix=0; ix<map_side_length; ix++) {
-    for (var iy=0; iy<map_height + 4; iy++) {
-        for (var iz=0; iz<map_side_length; iz++) {
+for (var ix = 0; ix < map_side_length; ix++) {
+    for (var iy = 0; iy < map_height + 4; iy++) {
+        for (var iz = 0; iz < map_side_length; iz++) {
             map.set(ix, iy, iz, -1);
         }
     }
 }
 
 // Initiating white board below
-for (var ix=0; ix<map_side_length; ix++) {
-    for (var iz=0; iz<map_side_length; iz++) {
+for (var ix = 0; ix < map_side_length; ix++) {
+    for (var iz = 0; iz < map_side_length; iz++) {
         var new_block = new THREE.Mesh(geometry, material_white);
-        var px = (ix-(map_side_length-1)/2) * amp;
+        var px = (ix - (map_side_length - 1) / 2) * amp;
         var py = -1 * amp;
-        var pz = (iz-(map_side_length-1)/2) * amp;
+        var pz = (iz - (map_side_length - 1) / 2) * amp;
         new_block.position.set(px, py, pz);
         scene.add(new_block);
     }
 }
 
 // Game data
-//var falling_
+var falling_type = 0;
+var falling_pos = new GridVector(
+    Math.floor((map_side_length - block_data[falling_type].sx) / 2),
+    map_height - block_data[falling_type].sy + 4,
+    Math.floor((map_side_length - block_data[falling_type].sx) / 2))
 
 function update_screen() {
-
+    for (var ix = 0; ix < map_side_length; ix++) {
+        for (var iy = 0; iy < map_height; iy++) {
+            for (var iz = 0; iz < map_side_length; iz++) {
+                display(ix, iy, iz, map.get(ix, iy, iz));
+            }
+        }
+    }
+    for (var ix = 0; ix < block_data[falling_type].sx; ix++) {
+        for (var iy = 0; iy < block_data[falling_type].sy; iy++) {
+            for (var iz = 0; iz < block_data[falling_type].sz; iz++) {
+                var dx = falling_pos.x + ix,
+                    dy = falling_pos.y + iy,
+                    dz = falling_pos.z + iz;
+                if (!block_data[falling_type].get(ix, iy, iz)){
+                    continue;
+                }
+                if (dx >= 0 && dx < map_side_length &&
+                    dy >= 0 && dy < map_height &&
+                    dz >= 0 && dz < map_side_length) {
+                    display(dx, dy, dz, falling_type);
+                }
+            }
+        }
+    }
 }
+
+var playtime = 0;
 
 function onTick() {
     camera.position.set(
@@ -229,6 +257,15 @@ function onTick() {
     cam_rot_around += 0.005;
     camera.rotation.x = -0.3;
     camera.rotation.y = cam_rot_around;
+
+    playtime++;
+    if (playtime % 50 == 0) {
+        falling_pos.y -= 1;
+        if (falling_pos.y < 0) {
+            falling_pos.y = map_height - block_data[falling_type].sy + 4;
+        }
+        update_screen();
+    }
     setTimeout(onTick, 0.02);
 }
 
