@@ -42,12 +42,12 @@ function Array3D(sx, sy, sz) {
     this.sx = sx;
     this.sy = sy;
     this.sz = sz;
-    this.data = new Array(sx * sy * sz);
+    this.data = new Array(sx * sy * sz).fill(-1);
     this.set = function (x, y, z, data) {
-        this.data[x * sy * sz + y * sz + z] = data;
+        this.data[x * this.sy * this.sz + y * this.sz + z] = data;
     }
     this.get = function (x, y, z) {
-        return this.data[x * sy * sz + y * sz + z];
+        return this.data[x * this.sy * this.sz + y * this.sz + z];
     }
     this.copy = function (other) {
         this.sx = other.sx;
@@ -57,6 +57,7 @@ function Array3D(sx, sy, sz) {
         for (var i = 0; i < other.sx * other.sy * other.sz; i++) {
             this.data[i] = other.data[i];
         }
+        return this;
     }
 }
 
@@ -96,45 +97,45 @@ if (true) {
 
 
     temp_data = new Array3D(3, 3, 3);
-    temp_data.set(0, 1, 1, 1);
+    temp_data.set(0, 0, 1, 1);
+    temp_data.set(1, 0, 1, 1);
     temp_data.set(1, 1, 1, 1);
-    temp_data.set(1, 2, 1, 1);
-    temp_data.set(2, 2, 2, 1);
+    temp_data.set(2, 1, 1, 1);
     block_data.push(temp_data);
 
     temp_data = new Array3D(2, 2, 2);
     temp_data.set(0, 1, 1, 1);
     temp_data.set(1, 1, 1, 1);
     temp_data.set(0, 0, 1, 1);
-    temp_data.set(1, 0, 0, 1);
+    temp_data.set(1, 0, 1, 1);
     block_data.push(temp_data);
 
     temp_data = new Array3D(2, 2, 2);
-    temp_data.set(0, 1, 1, 1);
-    temp_data.set(1, 1, 1, 1);
-    temp_data.set(1, 0, 1, 1);
-    temp_data.set(1, 0, 2, 1);
-    block_data.push(temp_data);
-
-    temp_data = new Array3D(2, 2, 2);
-    temp_data.set(0, 1, 1, 1);
-    temp_data.set(1, 1, 1, 1);
-    temp_data.set(1, 0, 1, 1);
     temp_data.set(0, 0, 1, 1);
-    block_data.push(temp_data);
-
-    temp_data = new Array3D(2, 2, 2);
-    temp_data.set(0, 1, 1, 1);
-    temp_data.set(1, 1, 1, 1);
     temp_data.set(1, 0, 1, 1);
+    temp_data.set(1, 1, 1, 1);
     temp_data.set(1, 1, 0, 1);
     block_data.push(temp_data);
 
     temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 0, 0, 1);
+    temp_data.set(1, 0, 0, 1);
+    temp_data.set(1, 1, 0, 1);
+    temp_data.set(1, 1, 1, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(3, 3, 3);
     temp_data.set(0, 1, 1, 1);
     temp_data.set(1, 1, 1, 1);
-    temp_data.set(1, 0, 1, 1);
     temp_data.set(2, 1, 1, 1);
+    temp_data.set(1, 0, 1, 1);
+    block_data.push(temp_data);
+
+    temp_data = new Array3D(2, 2, 2);
+    temp_data.set(0, 0, 0, 1);
+    temp_data.set(1, 0, 0, 1);
+    temp_data.set(0, 1, 0, 1);
+    temp_data.set(0, 0, 1, 1);
     block_data.push(temp_data);
 }
 
@@ -211,12 +212,34 @@ for (var ix = 0; ix < map_side_length; ix++) {
     }
 }
 
-// Game data
+// Check if a falling tile can exist in place
+function fit(tile, pos){
+    for (var ix = 0; ix < tile.sx; ix++) {
+        for (var iy = 0; iy < tile.sy; iy++) {
+            for (var iz = 0; iz < tile.sz; iz++) {
+                if (tile.get(ix, iy, iz) <= 0) continue;
+                
+                if (dx >= 0 && dx < map_side_length &&
+                    dy >= 0 && dy < map_height &&
+                    dz >= 0 && dz < map_side_length)
+                        return false;
+                if (map.get(pos.x + ix, pos.y + iy,pos.z + iz) >= 0)
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// Defining falling block
 var falling_type = 0;
 var falling_pos = new GridVector(
     Math.floor((map_side_length - block_data[falling_type].sx) / 2),
     map_height - block_data[falling_type].sy + 4,
-    Math.floor((map_side_length - block_data[falling_type].sx) / 2))
+    Math.floor((map_side_length - block_data[falling_type].sx) / 2));
+
+var falling_block = new Array3D(1, 1, 1).copy(block_data[falling_type]);
+
 
 function update_screen() {
     for (var ix = 0; ix < map_side_length; ix++) {
@@ -226,13 +249,14 @@ function update_screen() {
             }
         }
     }
-    for (var ix = 0; ix < block_data[falling_type].sx; ix++) {
-        for (var iy = 0; iy < block_data[falling_type].sy; iy++) {
-            for (var iz = 0; iz < block_data[falling_type].sz; iz++) {
+    for (var ix = 0; ix < falling_block.sx; ix++) {
+        for (var iy = 0; iy < falling_block.sy; iy++) {
+            for (var iz = 0; iz < falling_block.sz; iz++) {
                 var dx = falling_pos.x + ix,
                     dy = falling_pos.y + iy,
                     dz = falling_pos.z + iz;
-                if (!block_data[falling_type].get(ix, iy, iz)){
+                console.log(falling_block.get(2, 2, 2));
+                if (falling_block.get(ix, iy, iz) == -1){
                     continue;
                 }
                 if (dx >= 0 && dx < map_side_length &&
