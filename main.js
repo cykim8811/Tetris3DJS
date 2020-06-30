@@ -49,6 +49,15 @@ function Array3D(sx, sy, sz){
     this.get = function(x, y, z){
         return this.data[x * sy * sz + y * sz + z];
     }
+    this.copy = function(other) {
+        this.sx = other.sx;
+        this.sy = other.sy;
+        this.sz = other.sz;
+        this.data = new Array(other.sx * other.sy * other.sz);
+        for (var i = 0; i < other.sx * other.sy * other.sz; i++) {
+            this.data[i] = other.data[i];
+        }
+    }
 }
 
 
@@ -63,7 +72,6 @@ var map = new Array3D(map_side_length, map_height + 4, map_side_length);
 var block_data = new Array(6);
 var temp_data;
 
-// Data assigning
 {
     {
         temp_data = new Array3D(5, 5, 5);
@@ -131,6 +139,31 @@ var temp_data;
     }
 }
 
+function rotate(target, axis, n=1) {
+    var result = new Array3D(target.sx, target.sy, target.sz);
+    var rotftn = function(){};
+    if (axis == 'X'){
+        rotftn = function(x, y, z){
+            result.set(x, z, target.sy - 1 - y, target.get(x, y, z));
+        }
+    }else if (axis == 'Y'){
+        rotftn = function(x, y, z){
+            result.set(target.sz - 1 - z, y, x, target.get(x, y, z));
+        }
+    }else if (axis == 'Z'){
+        rotftn = function(x, y, z){
+            result.set(y, target.sx-1-x, z, target.get(x, y, z));
+        }
+    }
+    for (var ix = 0; ix < target.sx; ix++) {
+        for (var iy = 0; iy < target.sy; iy++) {
+            for (var iz = 0; iz < target.sz; iz++) {
+                rotftn(ix, iy, iz);
+            }
+        }
+    }
+}
+
 // Set block at position x, y, z with data
 function display(x, y, z, data) {
     if (data < 0){
@@ -180,7 +213,7 @@ for (var ix=0; ix<map_side_length; ix++) {
 }
 
 // Game data
-
+//var falling_
 
 function update_screen() {
 
