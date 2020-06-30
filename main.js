@@ -7,10 +7,12 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+document.addEventListener('keydown', onKeyDown);
 
 // Camera setting
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 var cam_rot_around = 0;
+var camrot_dir = 0;
 
 // Adding Light
 var light = new THREE.AmbientLight(0xffffff, 0.8);
@@ -25,6 +27,7 @@ sdwLight.position.set(0, 50, 0);
 sdwLight.castShadow = true;
 scene.add(sdwLight);
 
+var running = true;
 
 // Three.js Material and Geometry
 var geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -84,8 +87,10 @@ function GridVector(x, y, z) {
 const map_side_length = 6;
 const map_height = 15;
 
+const margin = 2;
+
 var block = new Array3D(map_side_length, map_height, map_side_length);
-var map = new Array3D(map_side_length, map_height + 4, map_side_length);
+var map = new Array3D(map_side_length, map_height + margin, map_side_length);
 
 // Block shape data
 var block_data = new Array();
@@ -176,7 +181,7 @@ function rotate_block(target, axis, n = 1) {
     return result;
 }
 
-function rotate(axis, n=1) {
+function rotate_fallingblock(axis, n=1) {
     if (axis == 'X') {
         var res = rotate_block(falling_block, 'X', n);
         if (!fit(res, falling_pos)) return;
@@ -188,12 +193,32 @@ function rotate(axis, n=1) {
     }
 }
 
+function move_fallingblock(dir) {
+    switch ((dir + 4) % 4) {
+        case 0:
+            if (fit(falling_block, falling_pos.relative(1, 0, 0))) {
+                falling_pos = falling_pos.relative(1, 0, 0);
+            }
+            break;
+    }
+}
+
+function rotate_camera(n) {
+    if (n > 0){
+        cam_rot_around += Math.PI / 2;
+        camrot_dir += 1;
+    }else{
+        cam_rot_around -= Math.PI / 2;
+        camrot_dir -= 1;
+    }
+}
+
 // Display block at position x, y, z with data
 function display(x, y, z, data) {
     if (data < 0) {
         block.get(x, y, z).visible = false;
         map.set(x, y, z, -1);
-    } else {
+    }else{
         block.get(x, y, z).material = material[data % 8];
         block.get(x, y, z).visible = true;
     }
@@ -250,7 +275,7 @@ function fit(tile, pos){
                     dy = pos.y + iy,
                     dz = pos.z + iz;
                 if (!(dx >= 0 && dx < map_side_length &&
-                    dy >= 0 && dy < map_height + 4 &&
+                    dy >= 0 && dy < map_height + margin &&
                     dz >= 0 && dz < map_side_length)) return false;
                 if (map.get(pos.x + ix, pos.y + iy,pos.z + iz) >= 0)
                 return false;
@@ -264,10 +289,11 @@ function fit(tile, pos){
 var falling_type = 0;
 var falling_pos = new GridVector(
     Math.floor((map_side_length - block_data[falling_type].sx) / 2),
-    map_height - block_data[falling_type].sy + 4,
+    map_height - block_data[falling_type].sy + margin,
     Math.floor((map_side_length - block_data[falling_type].sx) / 2));
 
 var falling_block = new Array3D(1, 1, 1).copy(block_data[falling_type]);
+
 
 
 function update_screen() {
@@ -299,29 +325,86 @@ function update_screen() {
 
 var playtime = 0;
 
+function check() {
+    while (fit(falling_block, falling_pos.relative(0, -1, 0))) {
+        falling_pos = falling_pos.relative(0, -1, 0);
+    }
+    
+    for (var ix = 0; ix < falling_block.sx; ix++) {
+        for (var iy = 0; iy < falling_block.sy; iy++) {
+            for (var iz = 0; iz < falling_block.sz; iz++) {
+                var dx = falling_pos.x + ix,
+                    dy = falling_pos.y + iy,
+                    dz = falling_pos.z + iz;
+                if (falling_block.get(ix, iy, iz) == -1){
+                    continue;
+                }
+                if (dx >= 0 && dx < map_side_length &&
+                    dy >= 0 && dy < map_height &&
+                    dz >= 0 && dz < map_side_length) {
+                    map.set(dx, dy, dz, falling_type);
+                }
+            }
+        }
+    }
+    falling_type = Math.floor(Math.random() * 8);
+    falling_block.copy(block_data[falling_type]);
+    falling_pos = new GridVector(
+        Math.floor((map_side_length-falling_block.sx)/2),
+        map_height + margin - falling_block.sy,
+        Math.floor((map_side_length-falling_block.sx)/2),
+    );
+    if (!fit(falling_block, falling_pos)) {
+        game_end();
+    }
+    update_screen();
+}
+
+// Event when game ends
+function game_end() {
+    running = false;
+}
+
+function onKeyDown(e) {
+    const keyCode = e.keyCode;
+    console.log(keyCode);
+    if (keyCode == 68) {rotate_camera(1);}
+    if (keyCode == 65) {rotate_camera(-1);}
+}
+
 function onTick() {
+    camera.rotation.order = "YXZ";
+    camera.rotation.x = -0.3;
+    var ratio = 0.07;
+    camera.rotation.y += cam_rot_around * ratio;
+    cam_rot_around = cam_rot_around * (1-ratio);
+
+    if (Math.abs(cam_rot_around)<0.01) {
+        cam_rot_around = 0;
+        camera.rotation.y = Math.round((camera.rotation.y - (Math.PI/3.5)) / (Math.PI/2)) * (Math.PI/2) + (Math.PI/3.5);
+    }
+
     camera.position.set(
         Math.sin(camera.rotation.y) * 15,
         12,
         Math.cos(camera.rotation.y) * 15
     );
-    camera.rotation.order = "YXZ";
-    cam_rot_around += 0.005;
-    camera.rotation.x = -0.3;
-    camera.rotation.y = cam_rot_around;
 
     playtime++;
     
-    if (playtime % 200 == 0){
-        rotate('X', 1);
-    }
-    if (playtime % 50 == 0) {
-        if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
-            falling_pos.y -= 1;
-        }else{
-            falling_pos.y = map_height - block_data[falling_type].sy + 4;
+    if (running) {
+        if (playtime % 200 == 0){
+            rotate_fallingblock('X', -1);
         }
-        update_screen();
+        if (playtime % 200 == 0) {
+            if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
+                falling_pos.y -= 1;
+            }else{
+                check();
+                // falling_pos.y = map_height - block_data[falling_type].sy + 4;
+            }
+            update_screen();
+        }
     }
     setTimeout(onTick, 0.02);
 }
