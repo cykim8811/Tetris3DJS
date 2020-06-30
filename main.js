@@ -1,6 +1,9 @@
 // Three js Initialize
 var scene = new THREE.Scene();
 var renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -14,9 +17,14 @@ var light = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(light);
 
 var dirLight = new THREE.DirectionalLight(0x808080, 0.8);
-dirLight.position.set(200, 200, 300);
-dirLight.castShadow = true;
+dirLight.position.set(200, 50, 300);
 scene.add(dirLight);
+
+var sdwLight = new THREE.DirectionalLight(0x808080, 0.4);
+sdwLight.position.set(0, 50, 0);
+sdwLight.castShadow = true;
+scene.add(sdwLight);
+
 
 // Three.js Material and Geometry
 var geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -66,6 +74,9 @@ function GridVector(x, y, z) {
     this.x = x;
     this.y = y;
     this.z = z;
+    this.relative = function(dx, dy, dz){
+        return new GridVector(this.x + dx, this.y + dy, this.z + dz);
+    }
 }
 
 
@@ -139,7 +150,7 @@ if (true) {
     block_data.push(temp_data);
 }
 
-function rotate(target, axis, n = 1) {
+function rotate_block(target, axis, n = 1) {
     var result = new Array3D(target.sx, target.sy, target.sz);
     var rotftn = function () { };
     if (axis == 'X') {
@@ -161,6 +172,19 @@ function rotate(target, axis, n = 1) {
                 rotftn(ix, iy, iz);
             }
         }
+    }
+    return result;
+}
+
+function rotate(axis, n=1) {
+    if (axis == 'X') {
+        var res = rotate_block(falling_block, 'X', n);
+        if (!fit(res, falling_pos)) return;
+        falling_block = res;
+    } else {
+        var res = rotate_block(falling_block, 'Z', n);
+        if (!fit(res, falling_pos)) return;
+        falling_block = res;
     }
 }
 
@@ -186,6 +210,8 @@ for (var ix = 0; ix < map_side_length; ix++) {
                 py = iy * amp,
                 pz = (iz - (map_side_length - 1) / 2) * amp;
             cbl.position.set(px, py, pz);
+            cbl.castShadow = true;
+            cbl.receiveShadow = true;
             scene.add(cbl);
             block.set(ix, iy, iz, cbl);
             display(ix, iy, iz, -1);
@@ -208,6 +234,8 @@ for (var ix = 0; ix < map_side_length; ix++) {
         var py = -1 * amp;
         var pz = (iz - (map_side_length - 1) / 2) * amp;
         new_block.position.set(px, py, pz);
+        new_block.castShadow = true;
+        new_block.receiveShadow = true;
         scene.add(new_block);
     }
 }
@@ -218,11 +246,12 @@ function fit(tile, pos){
         for (var iy = 0; iy < tile.sy; iy++) {
             for (var iz = 0; iz < tile.sz; iz++) {
                 if (tile.get(ix, iy, iz) <= 0) continue;
-                
-                if (dx >= 0 && dx < map_side_length &&
-                    dy >= 0 && dy < map_height &&
-                    dz >= 0 && dz < map_side_length)
-                        return false;
+                var dx = pos.x + ix,
+                    dy = pos.y + iy,
+                    dz = pos.z + iz;
+                if (!(dx >= 0 && dx < map_side_length &&
+                    dy >= 0 && dy < map_height + 4 &&
+                    dz >= 0 && dz < map_side_length)) return false;
                 if (map.get(pos.x + ix, pos.y + iy,pos.z + iz) >= 0)
                 return false;
             }
@@ -255,7 +284,6 @@ function update_screen() {
                 var dx = falling_pos.x + ix,
                     dy = falling_pos.y + iy,
                     dz = falling_pos.z + iz;
-                console.log(falling_block.get(2, 2, 2));
                 if (falling_block.get(ix, iy, iz) == -1){
                     continue;
                 }
@@ -283,9 +311,14 @@ function onTick() {
     camera.rotation.y = cam_rot_around;
 
     playtime++;
+    
+    if (playtime % 200 == 0){
+        rotate('X', 1);
+    }
     if (playtime % 50 == 0) {
-        falling_pos.y -= 1;
-        if (falling_pos.y < 0) {
+        if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
+            falling_pos.y -= 1;
+        }else{
             falling_pos.y = map_height - block_data[falling_type].sy + 4;
         }
         update_screen();
