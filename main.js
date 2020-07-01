@@ -155,7 +155,7 @@ if (true) {
     block_data.push(temp_data);
 }
 
-function rotate_block(target, axis, n = 1) {
+function rotate_block(target, axis) {
     var result = new Array3D(target.sx, target.sy, target.sz);
     var rotftn = function () { };
     if (axis == 'X') {
@@ -181,26 +181,66 @@ function rotate_block(target, axis, n = 1) {
     return result;
 }
 
-function rotate_fallingblock(axis, n=1) {
-    if (axis == 'X') {
-        var res = rotate_block(falling_block, 'X', n);
-        if (!fit(res, falling_pos)) return;
-        falling_block = res;
-    } else {
-        var res = rotate_block(falling_block, 'Z', n);
-        if (!fit(res, falling_pos)) return;
-        falling_block = res;
-    }
-}
+function rotate_fallingblock_horizontal(dir) {
+    var absdir = Math.floor(dir + camrot_dir);
+    while (absdir < 0) {absdir += 4;}
+    absdir = absdir % 4;
 
-function move_fallingblock(dir) {
-    switch ((dir + 4) % 4) {
+    var res;
+    switch (absdir){
         case 0:
+            res = rotate_block(falling_block, 'X');
+            break;
+        case 1:
+            res = rotate_block(falling_block, 'Z');
+            res = rotate_block(res, 'Z');
+            res = rotate_block(res, 'Z');
+            break;
+        case 2:
+            res = rotate_block(falling_block, 'X');
+            res = rotate_block(res, 'X');
+            res = rotate_block(res, 'X');
+            break;
+        case 3:
+            res = rotate_block(falling_block, 'Z');
+            break;
+    }
+    if (!fit(res, falling_pos)) return;
+    falling_block = res;
+    update_screen();
+}
+function rotate_fallingblock_vertical(dir) {
+    res = rotate_block(falling_block, 'Y');
+    if (!fit(res, falling_pos)) return;
+    falling_block = res;
+    update_screen();
+}
+function move_fallingblock(dir) {
+    dir -= camrot_dir;
+    while (dir < 0) {dir += 4;}
+    switch (dir % 4) {
+        case 0:
+            if (fit(falling_block, falling_pos.relative(-1, 0, 0))) {
+                falling_pos = falling_pos.relative(-1, 0, 0);
+            }
+            break;
+        case 1:
+            if (fit(falling_block, falling_pos.relative(0, 0, -1))) {
+                falling_pos = falling_pos.relative(0, 0, -1);
+            }
+            break;
+        case 2:
             if (fit(falling_block, falling_pos.relative(1, 0, 0))) {
                 falling_pos = falling_pos.relative(1, 0, 0);
             }
             break;
+        case 3:
+            if (fit(falling_block, falling_pos.relative(0, 0, 1))) {
+                falling_pos = falling_pos.relative(0, 0, 1);
+            }
+            break;
     }
+    update_screen();
 }
 
 function rotate_camera(n) {
@@ -356,6 +396,7 @@ function check() {
     );
     if (!fit(falling_block, falling_pos)) {
         game_end();
+        falling_pos = new GridVector(0, -5, 0);
     }
     update_screen();
 }
@@ -368,8 +409,17 @@ function game_end() {
 function onKeyDown(e) {
     const keyCode = e.keyCode;
     console.log(keyCode);
-    if (keyCode == 68) {rotate_camera(1);}
-    if (keyCode == 65) {rotate_camera(-1);}
+    if (running) {
+        if (keyCode == 68) {rotate_camera(1);}
+        if (keyCode == 65) {rotate_camera(-1);}
+        if (keyCode == 32) {check();}
+        if (keyCode == 69) {rotate_fallingblock_vertical(1);}
+        if (keyCode == 87) {rotate_fallingblock_horizontal(1);}
+        if (keyCode == 37) {move_fallingblock(0);}
+        if (keyCode == 38) {move_fallingblock(1);}
+        if (keyCode == 39) {move_fallingblock(2);}
+        if (keyCode == 40) {move_fallingblock(3);}
+    }
 }
 
 function onTick() {
@@ -381,7 +431,7 @@ function onTick() {
 
     if (Math.abs(cam_rot_around)<0.01) {
         cam_rot_around = 0;
-        camera.rotation.y = Math.round((camera.rotation.y - (Math.PI/3.5)) / (Math.PI/2)) * (Math.PI/2) + (Math.PI/3.5);
+        camera.rotation.y = Math.round((camera.rotation.y + (Math.PI/3)) / (Math.PI/2)) * (Math.PI/2) - (Math.PI/3);
     }
 
     camera.position.set(
@@ -394,7 +444,7 @@ function onTick() {
     
     if (running) {
         if (playtime % 200 == 0){
-            rotate_fallingblock('X', -1);
+
         }
         if (playtime % 200 == 0) {
             if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
