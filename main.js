@@ -387,6 +387,30 @@ function check() {
             }
         }
     }
+
+    for (var iy = 0; iy < map_height + margin; iy++) {
+        var isFull = true;
+        for (var ix = 0; ix < map_side_length; ix++) {
+            for (var iz = 0; iz < map_side_length; iz++) {
+                if (map.get(ix, iy, iz) < 0) {
+                    isFull = false;
+                    break;
+                }
+            }
+        }
+        if (isFull) {
+            for (var iyy = iy; iyy < map_height + margin - 1; iyy++) {
+                for (var ixx = 0; ixx < map_side_length; ixx++) {
+                    for (var izz = 0; izz < map_side_length; izz++) {
+                        map.set(ixx, iyy, izz, map.get(ixx, iyy + 1, izz));
+                    }
+                }
+            }
+            iy -= 1;
+        }
+    }
+
+
     falling_type = Math.floor(Math.random() * 8);
     falling_block.copy(block_data[falling_type]);
     falling_pos = new GridVector(
