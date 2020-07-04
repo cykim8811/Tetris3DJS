@@ -197,37 +197,52 @@ function rotate_fallingblock_horizontal(dir) {
     while (absdir < 0) {absdir += 4;}
     absdir = absdir % 4;
 
-    var res;
-    for (var i=0; i<5; i++){
-        switch (absdir){
-            case 0:
-                res = rotate_block(falling_block, 'X');
-                break;
-            case 1:
-                res = rotate_block(falling_block, 'Z');
-                res = rotate_block(res, 'Z');
-                res = rotate_block(res, 'Z');
-                break;
-            case 2:
-                res = rotate_block(falling_block, 'X');
-                res = rotate_block(res, 'X');
-                res = rotate_block(res, 'X');
-                break;
-            case 3:
-                res = rotate_block(falling_block, 'Z');
-                break;
-        }
-        if (fit(res, falling_pos)){
-            falling_block = res;
+    switch (absdir){
+        case 0:
+            res = rotate_block(falling_block, 'X');
             break;
-        }
+        case 1:
+            res = rotate_block(falling_block, 'Z');
+            res = rotate_block(res, 'Z');
+            res = rotate_block(res, 'Z');
+            break;
+        case 2:
+            res = rotate_block(falling_block, 'X');
+            res = rotate_block(res, 'X');
+            res = rotate_block(res, 'X');
+            break;
+        case 3:
+            res = rotate_block(falling_block, 'Z');
+            break;
     }
+    if (!fit(res, falling_pos)){
+        return;
+    }
+    falling_block = res;
     update_screen();
 }
 function rotate_fallingblock_vertical(dir) {
     res = rotate_block(falling_block, 'Y');
-    if (!fit(res, falling_pos)) return;
-    falling_block = res;
+
+    var deltaPos = new Array();
+    deltaPos.push([0, 0, 0]);
+    deltaPos.push([0, 1, 0]);
+    deltaPos.push([1, 1, 0]);
+    deltaPos.push([-1, 1, 0]);
+    deltaPos.push([0, 1, 1]);
+    deltaPos.push([0, 1, -1]);
+    deltaPos.push([1, 0, 0]);
+    deltaPos.push([-1, 0, 0]);
+    deltaPos.push([0, 0, 1]);
+    deltaPos.push([0, 0, -1]);
+
+    for (var i=0; i<deltaPos.length; i++){
+        if (fit(res, falling_pos.relative(deltaPos[i][0], deltaPos[i][1], deltaPos[i][2]))) {
+            falling_block = res;
+            falling_pos = falling_pos.relative(deltaPos[i][0], deltaPos[i][1], deltaPos[i][2]);
+            break;
+        }
+    }
     update_screen();
 }
 function move_fallingblock(dir) {
@@ -479,7 +494,7 @@ function onKeyDown(e) {
     }
 }
 
-function onTick() {
+function manage_camera_rotation() {
     camera.rotation.order = "YXZ";
     camera.rotation.x = -0.3;
     var ratio = 0.07;
@@ -496,10 +511,15 @@ function onTick() {
         12,
         Math.cos(camera.rotation.y) * 15
     );
+}
+
+function onTick() {
 
     playtime++;
     
     if (running) {
+        manage_camera_rotation();
+
         if (fall_delay < 0) {
             if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
                 falling_pos.y -= 1;
@@ -511,6 +531,13 @@ function onTick() {
             fall_delay = fall_maxdelay;
         }
         fall_delay -= 1;
+    } else {
+        camera.rotation.y += 0.01;
+        camera.position.set(
+            Math.sin(camera.rotation.y) * 15,
+            12,
+            Math.cos(camera.rotation.y) * 15
+        );
     }
     setTimeout(onTick, 0.02);
 }
