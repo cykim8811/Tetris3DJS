@@ -105,8 +105,8 @@ function GridVector(x, y, z) {
 
 
 // Map Array
-const map_side_length = 5;
-const map_height = 15;
+const map_side_length = 4;
+const map_height = 10;
 
 const margin = 2;
 
