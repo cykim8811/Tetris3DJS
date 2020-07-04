@@ -29,6 +29,17 @@ scene.add(sdwLight);
 
 var running = true;
 
+// Array shuffle function
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length; i; i -= 1) {
+        j = Math.floor(Math.random() * i);
+        x = a[i - 1];
+        a[i - 1] = a[j];
+        a[j] = x;
+    }
+}
+
 // Three.js Material and Geometry
 var geometry = new THREE.BoxGeometry(1, 1, 1);
 var textureLoader = new THREE.TextureLoader();
@@ -187,26 +198,30 @@ function rotate_fallingblock_horizontal(dir) {
     absdir = absdir % 4;
 
     var res;
-    switch (absdir){
-        case 0:
-            res = rotate_block(falling_block, 'X');
+    for (var i=0; i<5; i++){
+        switch (absdir){
+            case 0:
+                res = rotate_block(falling_block, 'X');
+                break;
+            case 1:
+                res = rotate_block(falling_block, 'Z');
+                res = rotate_block(res, 'Z');
+                res = rotate_block(res, 'Z');
+                break;
+            case 2:
+                res = rotate_block(falling_block, 'X');
+                res = rotate_block(res, 'X');
+                res = rotate_block(res, 'X');
+                break;
+            case 3:
+                res = rotate_block(falling_block, 'Z');
+                break;
+        }
+        if (fit(res, falling_pos)){
+            falling_block = res;
             break;
-        case 1:
-            res = rotate_block(falling_block, 'Z');
-            res = rotate_block(res, 'Z');
-            res = rotate_block(res, 'Z');
-            break;
-        case 2:
-            res = rotate_block(falling_block, 'X');
-            res = rotate_block(res, 'X');
-            res = rotate_block(res, 'X');
-            break;
-        case 3:
-            res = rotate_block(falling_block, 'Z');
-            break;
+        }
     }
-    if (!fit(res, falling_pos)) return;
-    falling_block = res;
     update_screen();
 }
 function rotate_fallingblock_vertical(dir) {
@@ -326,7 +341,17 @@ function fit(tile, pos){
 }
 
 // Defining falling block
-var falling_type = 0;
+var bag_of_block = new Array();
+
+function reset_bag(){
+    for (var i=0; i<8; i++) {bag_of_block.push(i);}
+    shuffle(bag_of_block);
+}
+
+reset_bag();
+
+var falling_type = bag_of_block.pop();
+
 var falling_pos = new GridVector(
     Math.floor((map_side_length - block_data[falling_type].sx) / 2),
     map_height - block_data[falling_type].sy + margin,
@@ -364,6 +389,8 @@ function update_screen() {
 }
 
 var playtime = 0;
+var fall_maxdelay = 200;
+var fall_delay = fall_maxdelay;
 
 function check() {
     while (fit(falling_block, falling_pos.relative(0, -1, 0))) {
@@ -410,8 +437,8 @@ function check() {
         }
     }
 
-
-    falling_type = Math.floor(Math.random() * 8);
+    if (bag_of_block.length == 0) {reset_bag();}
+    falling_type = bag_of_block.pop();
     falling_block.copy(block_data[falling_type]);
     falling_pos = new GridVector(
         Math.floor((map_side_length-falling_block.sx)/2),
@@ -437,12 +464,18 @@ function onKeyDown(e) {
         if (keyCode == 68) {rotate_camera(1);}
         if (keyCode == 65) {rotate_camera(-1);}
         if (keyCode == 32) {check();}
-        if (keyCode == 69) {rotate_fallingblock_vertical(1);}
-        if (keyCode == 87) {rotate_fallingblock_horizontal(1);}
-        if (keyCode == 37) {move_fallingblock(0);}
-        if (keyCode == 38) {move_fallingblock(1);}
-        if (keyCode == 39) {move_fallingblock(2);}
-        if (keyCode == 40) {move_fallingblock(3);}
+        if (keyCode == 69) {rotate_fallingblock_vertical(1);
+            if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
+        if (keyCode == 87) {rotate_fallingblock_horizontal(1);
+            if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
+        if (keyCode == 37) {move_fallingblock(0);
+            if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
+        if (keyCode == 38) {move_fallingblock(1);
+            if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
+        if (keyCode == 39) {move_fallingblock(2);
+            if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
+        if (keyCode == 40) {move_fallingblock(3);
+            if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
     }
 }
 
@@ -467,10 +500,7 @@ function onTick() {
     playtime++;
     
     if (running) {
-        if (playtime % 200 == 0){
-
-        }
-        if (playtime % 200 == 0) {
+        if (fall_delay < 0) {
             if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
                 falling_pos.y -= 1;
             }else{
@@ -478,7 +508,9 @@ function onTick() {
                 // falling_pos.y = map_height - block_data[falling_type].sy + 4;
             }
             update_screen();
+            fall_delay = fall_maxdelay;
         }
+        fall_delay -= 1;
     }
     setTimeout(onTick, 0.02);
 }
