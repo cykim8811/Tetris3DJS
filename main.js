@@ -1,3 +1,13 @@
+window.addEventListener("resize", resizeCanvas, false);
+function resizeCanvas() {
+    var canvas = renderer.domElement;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.updateProjectionMatrix();
+}
+
 // Three js Initialize
 var scene = new THREE.Scene();
 var renderer = new THREE.WebGLRenderer();
@@ -197,6 +207,20 @@ function rotate_fallingblock_horizontal(dir) {
     while (absdir < 0) {absdir += 4;}
     absdir = absdir % 4;
 
+
+    var deltaPos = new Array();
+    deltaPos.push([0, 0, 0]);
+    deltaPos.push([0, 1, 0]);
+    deltaPos.push([1, 1, 0]);
+    deltaPos.push([-1, 1, 0]);
+    deltaPos.push([0, 1, 1]);
+    deltaPos.push([0, 1, -1]);
+    deltaPos.push([1, 0, 0]);
+    deltaPos.push([-1, 0, 0]);
+    deltaPos.push([0, 0, 1]);
+    deltaPos.push([0, 0, -1]);
+
+    var res;
     switch (absdir){
         case 0:
             res = rotate_block(falling_block, 'X');
@@ -215,14 +239,17 @@ function rotate_fallingblock_horizontal(dir) {
             res = rotate_block(falling_block, 'Z');
             break;
     }
-    if (!fit(res, falling_pos)){
-        return;
+    for (var i=0; i<deltaPos.length; i++){
+        if (fit(res, falling_pos.relative(deltaPos[i][0], deltaPos[i][1], deltaPos[i][2]))) {
+            falling_block = res;
+            falling_pos = falling_pos.relative(deltaPos[i][0], deltaPos[i][1], deltaPos[i][2]);
+            break;
+        }
     }
-    falling_block = res;
     update_screen();
 }
 function rotate_fallingblock_vertical(dir) {
-    res = rotate_block(falling_block, 'Y');
+    var res = rotate_block(falling_block, 'Y');
 
     var deltaPos = new Array();
     deltaPos.push([0, 0, 0]);
@@ -532,7 +559,7 @@ function onTick() {
         }
         fall_delay -= 1;
     } else {
-        camera.rotation.y += 0.01;
+        camera.rotation.y += 0.005;
         camera.position.set(
             Math.sin(camera.rotation.y) * 15,
             12,
