@@ -24,6 +24,8 @@ var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHei
 var cam_rot_around = 0;
 var camrot_dir = 0;
 
+var camera_next = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
 // Adding Light
 var light = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(light);
@@ -112,6 +114,9 @@ const margin = 2;
 
 var block = new Array3D(map_side_length, map_height, map_side_length);
 var map = new Array3D(map_side_length, map_height + margin, map_side_length);
+
+// Display array
+var block_next = new Array3D(5, 5, 5);
 
 // Block shape data
 var block_data = new Array();
@@ -314,10 +319,19 @@ function rotate_camera(n) {
 function display(x, y, z, data) {
     if (data < 0) {
         block.get(x, y, z).visible = false;
-        map.set(x, y, z, -1);
     }else{
         block.get(x, y, z).material = material[data % 8];
         block.get(x, y, z).visible = true;
+    }
+}
+
+// Display next block at position x, y, z with data
+function display_next(x, y, z, data) {
+    if (data < 0) {
+        block_next.get(x, y, z).visible = false;
+    }else{
+        block_next.get(x, y, z).material = material[data % 8];
+        block_next.get(x, y, z).visible = true;
     }
 }
 
@@ -359,6 +373,25 @@ for (var ix = 0; ix < map_side_length; ix++) {
         new_block.castShadow = true;
         new_block.receiveShadow = true;
         scene.add(new_block);
+    }
+}
+
+// Initiating next display
+for (var ix = 0; ix < 5; ix++) {
+    for (var iy = 0; iy < 5; iy++) {
+        for (var iz = 0; iz < 5; iz++) {
+            var cbl = new THREE.Mesh(geometry);
+            var amp = 1;
+            var px = (ix - (map_side_length - 1) / 2) * amp,
+                py = (iy - 10000) * amp,
+                pz = (iz - (map_side_length - 1) / 2) * amp;
+            cbl.position.set(px, py, pz);
+            cbl.castShadow = true;
+            cbl.receiveShadow = true;
+            scene.add(cbl);
+            block_next.set(ix, iy, iz, cbl);
+            display_next(ix, iy, iz, 1);
+        }
     }
 }
 
@@ -534,18 +567,29 @@ function manage_camera_rotation() {
     }
 
     camera.position.set(
-        Math.sin(camera.rotation.y) * 15,
-        12,
-        Math.cos(camera.rotation.y) * 15
+        Math.sin(camera.rotation.y) * 13,
+        10,
+        Math.cos(camera.rotation.y) * 13
+    );
+}
+
+function manage_next_camera_rotation() {
+    camera_next.rotation.order = "YXZ";
+    camera_next.rotation.x = -0.3;
+    camera_next.rotation.y += 0.03;
+
+    camera_next.position.set(
+        Math.sin(camera.rotation.y) * 13,
+        10,
+        Math.cos(camera.rotation.y) * 13
     );
 }
 
 function onTick() {
-
     playtime++;
-    
     if (running) {
         manage_camera_rotation();
+        manage_next_camera_rotation();
 
         if (fall_delay < 0) {
             if (fit(falling_block, falling_pos.relative(0, -1, 0))) {
@@ -561,9 +605,9 @@ function onTick() {
     } else {
         camera.rotation.y += 0.005;
         camera.position.set(
-            Math.sin(camera.rotation.y) * 15,
-            12,
-            Math.cos(camera.rotation.y) * 15
+            Math.sin(camera.rotation.y) * 13,
+            10,
+            Math.cos(camera.rotation.y) * 13
         );
     }
     setTimeout(onTick, 0.02);
