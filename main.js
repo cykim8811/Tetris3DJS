@@ -6,11 +6,34 @@ function resizeCanvas() {
     camera.aspect = window.innerWidth / window.innerHeight;
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.updateProjectionMatrix();
+
+    var width = renderer.domElement.width;
+    var height = renderer.domElement.height;
+    var l = Math.min(0.25 * (width - 0.3 * height), 0.2 * height);
+
+    for (var i = 0; i < text_label.length; i++) {
+        text_label[i].style.top = (height - height * 0.2 + 28 * i) + 'px';
+        text_label[i].style.left = (width - 0.25 * (width - 0.3 * height) - 0.5 * l) + 'px';
+        document.body.replaceChild(text_label[i], text_label[i]);
+    }
 }
 
+function add_text(str = "None", x = 100, y = 100) {
+    var txt = document.createElement('div');
+    txt.style.color = "white";
+    txt.style.position = 'absolute';
+    txt.style.width = 200;
+    txt.style.height = 100;
+    txt.innerHTML = str;
+    txt.style.font = "18px Arial";
+    txt.style.top = x + 'px';
+    txt.style.left = y + 'px';
+    document.body.appendChild(txt);
+    return txt;
+}
 // Three js Initialize
 var scene = new THREE.Scene();
-var renderer = new THREE.WebGLRenderer();
+var renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -18,6 +41,26 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 document.addEventListener('keydown', onKeyDown);
+
+var text_label = new Array();
+text_label.push(add_text("Move block: Arrows"));
+text_label.push(add_text("Spin: W, E"));
+text_label.push(add_text("Hold: Q"));
+text_label.push(add_text("Rotate scene: A, D"));
+text_label.push(add_text("Hard drop: Space"));
+
+var text_score = add_text("Score: 0", 20, 20);
+
+var width = renderer.domElement.width;
+var height = renderer.domElement.height;
+var l = Math.min(0.25 * (width - 0.3 * height), 0.2 * height);
+for (var i = 0; i < text_label.length; i++) {
+    text_label[i].style.top = (height - height * 0.2 + 28 * i) + 'px';
+    text_label[i].style.left = (width - 0.25 * (width - 0.3 * height) - 0.5 * l) + 'px';
+    document.body.replaceChild(text_label[i], text_label[i]);
+}
+
+renderer.setClearColor(0x000000, 1);
 
 // Camera setting
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -265,6 +308,7 @@ function rotate_fallingblock_horizontal(dir) {
     }
     update_screen();
 }
+
 function rotate_fallingblock_vertical(dir) {
     var res = rotate_block(falling_block, 'Y');
 
@@ -439,13 +483,20 @@ function reset_bag(){
 
 var falling_type = pop_next_block();
 
+var hold_block = -1;
+var hold_used = false;
+
+var camera_vel = 0;
+var camera_mov = 0;
+
+var score = 0;
+
 var falling_pos = new GridVector(
     Math.floor((map_side_length - block_data[falling_type].sx) / 2),
     map_height - block_data[falling_type].sy + margin,
     Math.floor((map_side_length - block_data[falling_type].sx) / 2));
 
 var falling_block = new Array3D(1, 1, 1).copy(block_data[falling_type]);
-
 
 
 function update_screen() {
@@ -521,6 +572,9 @@ function check() {
                 }
             }
             iy -= 1;
+            camera_vel += 0.6;
+            score += 1;
+            text_score.innerHTML = "Score: " + score;
         }
     }
     falling_type = pop_next_block();
@@ -535,6 +589,7 @@ function check() {
         falling_pos = new GridVector(0, -5, 0);
     }
     update_screen();
+    hold_used = false;
 }
 
 // Event when game ends
@@ -548,7 +603,7 @@ function onKeyDown(e) {
     if (running) {
         if (keyCode == 68) {rotate_camera(1);}
         if (keyCode == 65) {rotate_camera(-1);}
-        if (keyCode == 32) {check();}
+        if (keyCode == 32) {check(); camera_vel += 0.2;}
         if (keyCode == 69) {rotate_fallingblock_vertical(1);
             if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
         if (keyCode == 87) {rotate_fallingblock_horizontal(1);
@@ -561,7 +616,32 @@ function onKeyDown(e) {
             if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
         if (keyCode == 40) {move_fallingblock(3);
             if (!fit(falling_block, falling_pos.relative(0, -1, 0))) fall_delay = fall_maxdelay;}
+        if (keyCode == 81 && !hold_used) {
+            use_hold();
+        }
     }
+}
+
+function use_hold() {
+    hold_used = true;
+    
+    falling_pos = new GridVector(0, -5, 0);
+    if (hold_block < 0) {
+        hold_block = falling_type;
+        falling_type = pop_next_block();
+    }else{
+        var temp = falling_type;
+        falling_type = hold_block;
+        hold_block = temp;
+    }
+    falling_block.copy(block_data[falling_type]);
+    falling_pos = new GridVector(
+        Math.floor((map_side_length-falling_block.sx)/2),
+        map_height + margin - falling_block.sy,
+        Math.floor((map_side_length-falling_block.sx)/2),
+    );
+    update_screen();
+    set_next_map();
 }
 
 function manage_camera_rotation() {
@@ -578,7 +658,7 @@ function manage_camera_rotation() {
 
     camera.position.set(
         Math.sin(camera.rotation.y) * 13,
-        10,
+        10 + camera_mov,
         Math.cos(camera.rotation.y) * 13
     );
 }
@@ -640,20 +720,36 @@ function onTick() {
             Math.cos(camera.rotation.y) * 13
         );
     }
+    camera_vel -= camera_mov;
+    camera_mov += camera_vel;
+    camera_vel *= 0.6;
     setTimeout(onTick, 0.02);
 }
 
 function render() {
     var width = renderer.domElement.width;
     var height = renderer.domElement.height;
-    renderer.autoClear = false;
     requestAnimationFrame(render);
     renderer.setViewport(0, 0, width, height);
     renderer.render(scene, camera);
 
-    set_next_map(next_list[0]);
-    renderer.setViewport(width * 0.2, height * 0.7, height * 0.2, height * 0.2);
-    renderer.render(scene, camera_next);
+
+    renderer.autoClear = false;
+
+    var l = Math.min(0.25 * (width - 0.3 * height), 0.2 * height);
+
+    if (hold_block >= 0) {
+        set_next_map(hold_block);
+        renderer.setViewport(0.25 * (width - 0.3 * height) - 0.5 * l, height - 1.5 * l , l, l);
+        renderer.render(scene, camera_next);
+    }
+
+    for (var i=0; i<3; i++) {
+        set_next_map(next_list[i]);
+        renderer.setViewport(width - 0.25 * (width - 0.3 * height) - 0.5 * l, height - 1.5 * l - l * i , l, l);
+        renderer.render(scene, camera_next);
+    }
+
     renderer.autoClear = true;
 }
 
