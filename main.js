@@ -720,7 +720,7 @@ function onTick() {
             Math.cos(camera.rotation.y) * 13
         );
     }
-    camera_vel -= camera_mov;
+    camera_vel -= camera_mov * 0.1;
     camera_mov += camera_vel;
     camera_vel *= 0.6;
     setTimeout(onTick, 0.02);

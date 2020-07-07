@@ -1,0 +1,7 @@
+{
+    "short_name": "Tetris3D",
+    "name": "Tetris 3D JS by cykim",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "orientation": "portrait"
+  }
