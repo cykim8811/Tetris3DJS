@@ -488,6 +488,8 @@ var hold_used = false;
 
 var camera_vel = 0;
 var camera_mov = 0;
+var camera_hvel = 0;
+var camera_hmov = 0;
 
 var score = 0;
 
@@ -572,7 +574,8 @@ function check() {
                 }
             }
             iy -= 1;
-            camera_vel += 0.6;
+            camera_vel += 0.5;
+            camera_hvel += 0.7;
             score += 1;
             text_score.innerHTML = "Score: " + score;
         }
@@ -581,7 +584,7 @@ function check() {
     falling_block.copy(block_data[falling_type]);
     falling_pos = new GridVector(
         Math.floor((map_side_length-falling_block.sx)/2),
-        map_height + margin - falling_block.sy,
+        map_height + margin - falling_block.sy - 1,
         Math.floor((map_side_length-falling_block.sx)/2),
     );
     if (!fit(falling_block, falling_pos)) {
@@ -657,9 +660,9 @@ function manage_camera_rotation() {
     }
 
     camera.position.set(
-        Math.sin(camera.rotation.y) * 13,
+        Math.sin(camera.rotation.y) * 13 + Math.cos(camera.rotation.y) * camera_hmov,
         10 + camera_mov,
-        Math.cos(camera.rotation.y) * 13
+        Math.cos(camera.rotation.y) * 13 + Math.sin(camera.rotation.y) * camera_hmov
     );
 }
 
@@ -723,6 +726,9 @@ function onTick() {
     camera_vel -= camera_mov * 0.1;
     camera_mov += camera_vel;
     camera_vel *= 0.6;
+    camera_hvel -= camera_hmov * 0.8;
+    camera_hmov += camera_hvel;
+    camera_hvel *= 0.8;
     setTimeout(onTick, 0.02);
 }
 
